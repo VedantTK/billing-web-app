@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: masala_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: masala
+      POSTGRES_PASSWORD: masala123
+      POSTGRES_DB: masaladb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U masala -d masaladb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: masala_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://masala:masala123@db:5432/masaladb
+      - AUTH_SECRET=masala-billing-super-secret-key-change-in-production
+      - AUTH_TRUST_HOST=true
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXT_PUBLIC_APP_NAME=मसाला बिलिंग
+      - NEXT_PUBLIC_SHOP_NAME=श्री मसाला भांडार
+      - NEXT_PUBLIC_SHOP_ADDRESS=पुणे, महाराष्ट्र
+      - NEXT_PUBLIC_SHOP_PHONE=+91 98765 43210
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
